@@ -7,8 +7,8 @@ import org.testng.annotations.Test;
 
 import java.util.logging.Logger;
 
-public class TestClass extends BaseTest {
-    private static final Logger logger = Logger.getLogger(TestClass.class.getName());
+public class Testclass extends BaseTest {
+    private static final Logger logger = Logger.getLogger(Testclass.class.getName());
 
     @Test
     public static void loginTest() throws InterruptedException {

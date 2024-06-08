@@ -76,6 +76,6 @@ public class BaseTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }git checkout -b main
+    }
 
 }
