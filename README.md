@@ -132,7 +132,7 @@ Contributions are welcome! Please follow these guidelines:
 
 ## Contact Information
 
-For support or questions, you can reach me on [LinkedIn](https://www.linkedin.com/in/kartikdixit).
+For support or questions, you can reach me on  [LinkedIn](https://www.linkedin.com/in/kartikdixit03/).
 
 ## License
 
