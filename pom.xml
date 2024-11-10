@@ -93,6 +93,33 @@
             <version>5.0.6</version>
         </dependency>
 
+        <!-- JUnit dependency -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Hamcrest dependency -->
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <version>2.2</version>
+            <scope>test</scope>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.seleniumhq.selenium</groupId>-->
+<!--            <artifactId>selenium-devtools-v130</artifactId>-->
+<!--            <version>4.21.0</version> &lt;!&ndash; Ensure this matches your Selenium version &ndash;&gt;-->
+<!--        </dependency>-->
+
+        <dependency>
+    <groupId>io.appium</groupId>
+    <artifactId>java-client</artifactId>
+    <version>7.3.0</version>
+    </dependency>
+ 
 
 
     </dependencies>

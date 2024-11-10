@@ -1,81 +1,121 @@
 package base;
 
-import com.aventstack.extentreports.Status;
+import com.aventstack.extentreports.ExtentReports;
+import com.aventstack.extentreports.ExtentTest;
+import com.aventstack.extentreports.reporter.ExtentSparkReporter;
+import com.aventstack.extentreports.reporter.configuration.Theme;
 import io.github.bonigarcia.wdm.WebDriverManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.logging.LogType;
-import org.openqa.selenium.logging.LoggingPreferences;
-import org.testng.ITestResult;
 import org.testng.annotations.*;
 
 import java.awt.*;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Properties;
-import java.util.logging.Level;
-
-import org.testng.annotations.AfterSuite;
-import utilities.ExtentManager;
+import java.util.concurrent.TimeUnit;
 
 public class BaseTest {
 
-    public static WebDriver driverTools; // WebDriver class object to control the browser
+    protected static WebDriver driverTools;
+    protected ExtentReports extent;
+    protected static ThreadLocal<ExtentTest> mainLogger = new ThreadLocal<>();
+    private ExtentSparkReporter sparkReporter;
+    protected Properties prop = new Properties();
 
-    public static Properties prop = new Properties(); // Properties class object to read properties file
-
-    public static FileReader fr; // FileReader class object to read the file
-
-    public static final Logger logger = LogManager.getLogger(BaseTest.class);
-
-    /**
-     * This method is used to log the test steps in the extent report
-     * @param result
-     */
-
-    @BeforeTest
-    public void setUP() {
-        if(driverTools == null) {
-            try {
-                fr = new FileReader(System.getProperty("user.dir") + "/src/test/resources/configfiles/config.properties");
-                prop.load(fr);  // Load the properties file
-            } catch (Exception e) {
-                logger.error("Failed to read properties file", e);
-            }
-            LoggingPreferences logs = new LoggingPreferences();
-            logs.enable(LogType.BROWSER, Level.INFO);  // browser logs
-            logs.enable(LogType.DRIVER, Level.ALL); // driver logs
-
-            String browser = prop.getProperty("browser");
-            if(browser.equals("chrome")) {
-                WebDriverManager.chromedriver().setup();
-                driverTools = new ChromeDriver();
-                driverTools.get(prop.getProperty("testUrl"));
-            } else if(browser.equals("firefox")) {
-                WebDriverManager.firefoxdriver().setup();
-                driverTools = new FirefoxDriver();
-                driverTools.get(prop.getProperty("testUrl"));
-            } else {
-                logger.warn("Invalid browser specified in properties file.");
-            }
-        }
+    public static ExtentTest getLogger() {
+        return mainLogger.get();
     }
 
-    @AfterSuite
-    public void TearDown() {
-        ExtentManager.GetExtent().flush();
-        driverTools.quit();
+    @BeforeTest
+    public void setup() {
+        // Initialize ExtentReports and SparkReporter
+        sparkReporter = new ExtentSparkReporter("extentReport.html");
+        sparkReporter.config().setDocumentTitle("Automation Test Report");
+        sparkReporter.config().setReportName("Test Execution Report");
+        sparkReporter.config().setTheme(Theme.STANDARD);
 
-        File htmlFile = new File("/Users/kartikdixit/IdeaProjects/AutomationUI/src/test/resources/reports/extentReports.html");
+        extent = new ExtentReports();
+        extent.attachReporter(sparkReporter);
+
+        // Load properties from config file
         try {
-            Desktop.getDesktop().browse(htmlFile.toURI()); // Open the report in the default browser
+            FileReader fr = new FileReader(System.getProperty("user.dir") + "/src/test/resources/configfiles/config.properties");
+            prop.load(fr);
         } catch (IOException e) {
+            System.out.println("Failed to load config properties");
+            e.printStackTrace();
+        }
+
+        // Set up WebDriver based on browser type
+        String browser = prop.getProperty("browser");
+        String testUrl = prop.getProperty("testUrl");
+
+        if ("chrome".equalsIgnoreCase(browser)) {
+            WebDriverManager.chromedriver().setup();
+            driverTools = new ChromeDriver();
+        } else if ("firefox".equalsIgnoreCase(browser)) {
+            WebDriverManager.firefoxdriver().setup();
+            driverTools = new FirefoxDriver();
+        } else {
+            throw new IllegalArgumentException("Unsupported browser specified in properties file.");
+        }
+
+        // Navigate to the test URL and configure browser settings
+        driverTools.get(testUrl);
+        driverTools.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+        driverTools.manage().window().maximize();
+    }
+
+    @BeforeMethod
+    public void startTestLogging(Method method) {
+        // Create a new ExtentTest instance for each test method and assign it to mainLogger
+        ExtentTest test = extent.createTest(method.getName());
+        mainLogger.set(test);
+        log("Starting test: " + method.getName());
+        log("Browser setup and navigation to URL: " + prop.getProperty("testUrl"));
+    }
+
+    @BeforeMethod
+    public void resetSession() {
+        driverTools.manage().deleteAllCookies();
+        ((JavascriptExecutor) driverTools).executeScript("window.localStorage.clear();");
+        ((JavascriptExecutor) driverTools).executeScript("window.sessionStorage.clear();");
+        driverTools.navigate().refresh(); // Refresh to ensure a fresh session
+//        driverTools.get(prop.getProperty("testUrl")); // Navigate to the base URL
+    }
+
+    @AfterTest
+    public void tearDown() {
+        if (driverTools != null) {
+            driverTools.quit();
+            log("Browser closed.");
+        }
+
+        // Finalize the Extent Report
+        extent.flush();
+
+        // Open the Extent Report automatically after tests
+        File htmlFile = new File("extentReport.html");
+        try {
+            Desktop.getDesktop().browse(htmlFile.toURI());
+        } catch (IOException e) {
+            System.out.println("Failed to open Extent Report");
             e.printStackTrace();
         }
     }
 
+    // Custom log method to add messages to Extent Report
+    protected void log(String message) {
+        getLogger().info(message);
+    }
+
+    // Method to log a step in the report for detailed logging
+    protected void step(String stepDescription) {
+        log(stepDescription); // Use log method to log each step
+    }
 }
